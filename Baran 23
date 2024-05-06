@@ -1,0 +1,86 @@
+class PersonNotFoundError(Exception):
+    pass
+
+class SelfAssignmentError(Exception):
+    pass
+
+class Person:
+    def __init__(self, first_name, last_name, ssn):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.ssn = ssn
+
+class Patient(Person):
+    def __init__(self, first_name, last_name, ssn):
+        super().__init__(first_name, last_name, ssn)
+
+class Doctor(Person):
+    def __init__(self, first_name, last_name, ssn, doctor_id, specialty):
+        super().__init__(first_name, last_name, ssn)
+        self.doctor_id = doctor_id
+        self.specialty = specialty
+        self.patients = []
+
+class Clinic:
+    def __init__(self):
+        self.doctors = {}
+        self.patients = {}
+
+    def add_doctor(self, doctor):
+        self.doctors[doctor.doctor_id] = doctor
+
+    def add_patient(self, patient):
+        self.patients[patient.ssn] = patient
+
+    def get_doctor_by_id(self, doctor_id):
+        if doctor_id not in self.doctors:
+            raise PersonNotFoundError(f"Doctor with ID {doctor_id} not found")
+        return self.doctors[doctor_id]
+
+    def get_patient_by_ssn(self, ssn):
+        if ssn not in self.patients:
+            raise PersonNotFoundError(f"Patient with SSN {ssn} not found")
+        return self.patients[ssn]
+
+    def assign_patient_to_doctor(self, patient_ssn, doctor_id):
+        patient = self.get_patient_by_ssn(patient_ssn)
+        doctor = self.get_doctor_by_id(doctor_id)
+        if patient.ssn == doctor.ssn:
+            raise SelfAssignmentError("A doctor cannot be assigned as their own patient")
+        doctor.patients.append(patient)
+
+    def get_doctor_stats(self):
+        stats = {}
+        for doctor_id, doctor in self.doctors.items():
+            stats[doctor_id] = len(doctor.patients)
+        return stats
+
+    def get_specialty_stats(self):
+        stats = {}
+        for doctor in self.doctors.values():
+            if doctor.specialty not in stats:
+                stats[doctor.specialty] = 0
+            stats[doctor.specialty] += len(doctor.patients)
+        return stats
+
+# Test the system functionalities
+clinic = Clinic()
+
+# Adding doctors
+doctor1 = Doctor('John', 'Doe', '123-45-6789', 'D001', 'Cardiology')
+clinic.add_doctor(doctor1)
+
+# Adding patients
+patient1 = Patient('Jane', 'Smith', '987-65-4321')
+clinic.add_patient(patient1)
+
+# Assigning patients to doctors
+clinic.assign_patient_to_doctor('987-65-4321', 'D001')
+
+# Retrieving information
+print(clinic.get_doctor_by_id('D001').first_name)  # Output: John
+print(clinic.get_patient_by_ssn('987-65-4321').first_name)  # Output: Jane
+
+# Getting statistics
+print(clinic.get_doctor_stats())  # Output: {'D001': 1}
+print(clinic.get_specialty_stats())  # Output: {'Cardiology': 1}
